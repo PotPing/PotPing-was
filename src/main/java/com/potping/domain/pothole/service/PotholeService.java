@@ -30,29 +30,31 @@ public class PotholeService {
      * @throws IllegalArgumentException 유효하지 않은 세션 ID일 경우 예외 발생
      */
     public void processDetection(DetectionRequestDto dto) {
-        // 1. 세션 확인
+        // 세션 확인
         DriveSession session = driveSessionRepository.findById(dto.sessionId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다."));
 
-        // 2. 중복 검사
+        // 중복 검사
         int timestamp = dto.videoTimestamp().intValue();
         Optional<Pothole> duplicate = potholeRepository.findDuplicate(dto.sessionId(), timestamp - 2, timestamp + 2);
 
         Pothole pothole;
         if (duplicate.isPresent()) {
-            // 중복이면 기존 포트홀 사용
             pothole = duplicate.get();
         } else {
-            // 없으면 새로 생성
             pothole = Pothole.builder()
                     .driveSession(session)
                     .videoTimestamp(timestamp)
                     .severity(PotholeSeverity.valueOf(dto.severity()))
+                    .sequenceNumber(dto.sequenceNumber())
+                    .coordinateX(dto.center() != null ? dto.center().x() : null)
+                    .coordinateY(dto.center() != null ? dto.center().y() : null)
                     .build();
+
             potholeRepository.save(pothole);
         }
 
-        // 3. 로그 저장
+        // 3. 로그 저장 (기존 동일)
         DetectionLog log = DetectionLog.builder()
                 .pothole(pothole)
                 .originalImgPath(dto.images().original())
