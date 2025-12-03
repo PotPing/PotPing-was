@@ -10,9 +10,6 @@ import jakarta.persistence.Id;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.boot.jdbc.DataSourceBuilder;
-
-import javax.sql.DataSource;
 
 @Entity
 @Getter

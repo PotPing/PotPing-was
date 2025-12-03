@@ -84,7 +84,11 @@ public class ReportService {
     public ReportResponseDto getReportById(Long reportId) {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다."));
-        return ReportResponseDto.from(report);
+
+        // 해당 포트홀이 속한 세션의 전체 포트홀 개수 조회
+        Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+
+        return ReportResponseDto.from(report, count);
     }
 
     /**
@@ -94,7 +98,10 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<ReportResponseDto> getAllReports() {
         return reportRepository.findAll().stream()
-                .map(ReportResponseDto::from)
+                .map(report -> {
+                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    return ReportResponseDto.from(report, count);
+                })
                 .toList();
     }
 
@@ -105,7 +112,10 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<ReportResponseDto> getReportsByAdmin(Long adminId) {
         return reportRepository.findByAdminId(adminId).stream()
-                .map(ReportResponseDto::from)
+                .map(report -> {
+                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    return ReportResponseDto.from(report, count);
+                })
                 .toList();
     }
 
@@ -116,7 +126,10 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<ReportResponseDto> getReportsByUser(Long userId) {
         return reportRepository.findByPothole_DriveSession_User_Id(userId).stream()
-                .map(ReportResponseDto::from)
+                .map(report -> {
+                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    return ReportResponseDto.from(report, count);
+                })
                 .toList();
     }
 }
