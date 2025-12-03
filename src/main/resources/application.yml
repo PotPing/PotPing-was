@@ -15,3 +15,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  file:
+    upload-dir: ${UPLOAD_DIR}
