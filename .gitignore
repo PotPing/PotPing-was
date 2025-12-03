@@ -1,0 +1,16 @@
+/build/
+/target/
+/out/
+.gradle/
+
+.env
+
+*.log
+logs/
+
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
