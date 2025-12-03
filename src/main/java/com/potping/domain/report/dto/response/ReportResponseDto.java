@@ -1,0 +1,38 @@
+package com.potping.domain.report.dto.response;
+
+import com.potping.domain.report.entity.Report;
+import com.potping.domain.report.entity.ReportProcessStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDateTime;
+
+public record ReportResponseDto(
+        @Schema(description = "신고 ID", example = "1")
+        Long reportId,
+
+        @Schema(description = "관련 포트홀 ID", example = "55")
+        Long potholeId,
+
+        @Schema(description = "처리한 관리자 이름", example = "admin")
+        String adminName,
+
+        @Schema(description = "진행 상태 (SUBMITTED, DONE)", example = "SUBMITTED")
+        ReportProcessStatus processStatus,
+
+        @Schema(description = "신고 접수 시각")
+        LocalDateTime reportedAt,
+
+        @Schema(description = "보수 완료 시각 (완료 전엔 null)")
+        LocalDateTime completedAt
+) {
+    public static ReportResponseDto from(Report report) {
+        return new ReportResponseDto(
+                report.getId(),
+                report.getPothole().getId(),
+                report.getAdmin().getUsername(),
+                report.getProcessStatus(),
+                report.getReportedAt(),
+                report.getCompletedAt()
+        );
+    }
+}
