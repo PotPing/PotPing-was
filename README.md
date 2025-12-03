@@ -59,6 +59,7 @@ SHOW DATABASES;
 | **`DB_URL`** | `jdbc:mysql://localhost:3306/pothole_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8` | MySQL 접속 주소 (옵션 포함) |
 | **`DB_USERNAME`** | `root` | 본인의 MySQL 아이디 |
 | **`DB_PASSWORD`** | `1234` | 본인의 MySQL 비밀번호 |
+| **`UPLOAD_DIR`** | `C:/pothole_project/images/` | 포트홀 이미지가 저장될 로컬 폴더 경로 **(끝에 `/` 필수)** |
 
 #### 🛠️ IntelliJ에서 환경변수 설정하는 법
 1.  우측 상단 실행 버튼 옆의 **`PotpingApplication`** 클릭 → **`Edit Configurations...`** 선택
