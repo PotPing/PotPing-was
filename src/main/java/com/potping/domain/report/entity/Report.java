@@ -35,7 +35,7 @@ public class Report {
     private Pothole pothole; // 어떤 포트홀에 대한 신고인가
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User admin; // 처리한 관리자
 
     @Builder
@@ -48,5 +48,10 @@ public class Report {
     public void complete() {
         this.processStatus = ReportProcessStatus.DONE;
         this.completedAt = LocalDateTime.now();
+    }
+
+    // 완료 처리 시 담당자 배정 메서드
+    public void assignAdmin(User admin) {
+        this.admin = admin;
     }
 }
