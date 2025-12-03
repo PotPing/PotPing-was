@@ -1,8 +1,10 @@
 package com.potping.domain.pothole.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record DetectionRequestDto(
         @Schema(description = "세션 ID", example = "1")
         @JsonProperty("session_id")
@@ -20,12 +22,31 @@ public record DetectionRequestDto(
         @JsonProperty("average_confidence")
         Double confidence,
 
+        @Schema(description = "상태", example = "DETECTED")
+        @JsonProperty("status") // 파이썬이 보내주는 상태값 (보통 DETECTED)
+        String status,
+
+        @Schema(description = "이번 주행의 몇 번째 탐지인가", example = "5")
+        @JsonProperty("total_detections") // [추가] 탐지 순번
+        Integer sequenceNumber,
+
+        @Schema(description = "포트홀 중심 좌표")
+        @JsonProperty("detection_center")
+        CenterCoordinate center,
+
         @JsonProperty("images")
         ImageNames images
 ) {
-    public record ImageNames(
-            String original,
-            String processed,
-            String detected
-    ) {}
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record CenterCoordinate(
+                Double x,
+                Double y
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record ImageNames(
+                String original,
+                String processed,
+                String detected
+        ) {}
 }
