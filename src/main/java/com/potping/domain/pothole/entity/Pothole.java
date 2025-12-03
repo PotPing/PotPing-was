@@ -41,6 +41,12 @@ public class Pothole {
     @Column(nullable = false)
     private PotholeStatus status;
 
+    @Column(name = "sequence_number")
+    private Integer sequenceNumber;
+
+    private Double coordinateX;
+    private Double coordinateY;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -50,11 +56,15 @@ public class Pothole {
     private DriveSession driveSession;
 
     @Builder
-    public Pothole(DriveSession driveSession, Integer videoTimestamp, PotholeSeverity severity, PotholeStatus status) {
+    public Pothole(DriveSession driveSession, Integer videoTimestamp, PotholeSeverity severity,
+                   PotholeStatus status, Integer sequenceNumber, Double coordinateX, Double coordinateY) {
         this.driveSession = driveSession;
         this.videoTimestamp = videoTimestamp;
         this.severity = severity != null ? severity : PotholeSeverity.MEDIUM;
         this.status = status != null ? status : PotholeStatus.DETECTED;
+        this.sequenceNumber = sequenceNumber;
+        this.coordinateX = coordinateX;
+        this.coordinateY = coordinateY;
     }
 
     // 상태 변경 메서드 (신고 접수/완료 시 사용)
