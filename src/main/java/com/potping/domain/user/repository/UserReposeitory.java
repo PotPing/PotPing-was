@@ -1,0 +1,10 @@
+package com.potping.domain.user.repository;
+
+import com.potping.domain.user.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface UserReposeitory extends JpaRepository<User, Long> {
+    Optional<User> findByUsername(String username);
+}
