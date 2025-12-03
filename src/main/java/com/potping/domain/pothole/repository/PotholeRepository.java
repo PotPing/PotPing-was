@@ -15,4 +15,7 @@ public interface PotholeRepository extends JpaRepository<Pothole, Long> {
     Optional<Pothole> findDuplicate(@Param("sessionId") Long sessionId,
                                     @Param("startTime") int startTime,
                                     @Param("endTime") int endTime);
+
+    // 특정 세션의 포트홀 총 개수 카운트
+    long countByDriveSessionId(Long sessionId);
 }
