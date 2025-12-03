@@ -15,8 +15,17 @@ public record PotholeResponseDto(
         @Schema(description = "발견된 주행 세션 ID", example = "55")
         Long sessionId,
 
+        @Schema(description = "발견된 지역명", example = "경상북도 경산시")
+        String regionName,
+
         @Schema(description = "영상 내 발생 시간(초)", example = "12")
         Integer videoTimestamp,
+
+        @Schema(description = "X 좌표 (화면/지도)", example = "128.12345")
+        Double coordinateX,
+
+        @Schema(description = "Y 좌표 (화면/지도)", example = "36.54321")
+        Double coordinateY,
 
         @Schema(description = "심각도", example = "HIGH")
         PotholeSeverity severity,
@@ -37,7 +46,10 @@ public record PotholeResponseDto(
         return new PotholeResponseDto(
                 pothole.getId(),
                 pothole.getDriveSession().getId(),
+                pothole.getDriveSession().getRegion().getName(),
                 pothole.getVideoTimestamp(),
+                pothole.getCoordinateX(),
+                pothole.getCoordinateY(),
                 pothole.getSeverity(),
                 pothole.getStatus(),
                 pothole.getCreatedAt(),

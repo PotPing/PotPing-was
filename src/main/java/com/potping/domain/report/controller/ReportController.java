@@ -2,6 +2,7 @@ package com.potping.domain.report.controller;
 
 import com.potping.domain.report.dto.response.ReportResponseDto;
 import com.potping.domain.report.service.ReportService;
+import com.potping.domain.user.entity.Role;
 import com.potping.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,32 +20,43 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @Operation(summary = "신고 접수", description = "관리자가 포트홀을 확인하고 신고를 접수합니다.")
-    @PostMapping("/{potholeId}")
-    public ResponseEntity<ReportResponseDto> createReport(
-            @PathVariable Long potholeId,
+    @Operation(summary = "보수 완료 처리", description = "공사가 완료된 건을 처리 완료 상태로 변경합니다.")
+    public ResponseEntity<String> completeReport(
+            @PathVariable Long reportId,
             @SessionAttribute(name = "LOGIN_USER", required = false) User admin) {
 
-        if (admin == null) {
-            throw new IllegalArgumentException("로그인이 필요합니다.");
-        }
+        if (admin == null) throw new IllegalArgumentException("로그인이 필요합니다.");
 
-        Long reportId = reportService.createReport(potholeId, admin.getId());
-        ReportResponseDto response = reportService.getReportById(reportId); // (서비스에 추가 필요)
+        reportService.completeReport(reportId, admin.getId());
 
-        return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "보수 완료 처리", description = "공사가 완료된 건을 처리 완료 상태로 변경합니다.")
-    @PutMapping("/{reportId}/complete")
-    public ResponseEntity<ReportResponseDto> completeReport(@PathVariable Long reportId) {
-        reportService.completeReport(reportId);
-        return ResponseEntity.ok(reportService.getReportById(reportId));
+        return ResponseEntity.ok("보수 완료 처리되었습니다.");
     }
 
     @Operation(summary = "전체 신고 내역 조회", description = "시스템에 등록된 모든 신고 내역을 조회합니다.")
     @GetMapping
     public ResponseEntity<List<ReportResponseDto>> getAllReports() {
         return ResponseEntity.ok(reportService.getAllReports());
+    }
+
+    @Operation(summary = "내 신고/처리 내역 조회", description = "관리자는 '처리한 내역'을, 운전자는 '발견해서 신고된 내역'을 조회합니다.")
+    @GetMapping("/me")
+    public ResponseEntity<List<ReportResponseDto>> getMyReports(
+            @SessionAttribute(name = "LOGIN_USER", required = false) User loginUser) {
+
+        if (loginUser == null) {
+            throw new IllegalArgumentException("로그인이 필요합니다.");
+        }
+
+        List<ReportResponseDto> response;
+
+        if (loginUser.getRole() == Role.ADMIN) {
+            // 관리자라면 -> 내가 처리(보수완료)한 목록
+            response = reportService.getReportsByAdmin(loginUser.getId());
+        } else {
+            // 운전자라면 -> 내가 주행 중 발견한 목록
+            response = reportService.getReportsByUser(loginUser.getId());
+        }
+
+        return ResponseEntity.ok(response);
     }
 }

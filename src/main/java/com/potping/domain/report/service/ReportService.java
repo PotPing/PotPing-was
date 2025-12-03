@@ -24,35 +24,28 @@ public class ReportService {
     private final UserRepository userRepository;
 
     /**
-     * 신고 접수 기능
+     * 자동 신고 접수 기능 (시스템에 의해 호출)
      * @param potholeId 신고 대상 포트홀 ID
-     * @param adminId   신고를 승인한 관리자 ID (실명제)
      * @return 생성된 신고 내역의 ID (PK)
-     * @throws IllegalArgumentException 포트홀이나 관리자 정보가 없을 경우
-     * @throws IllegalStateException    이미 신고된 포트홀일 경우 (중복 방지)
      */
-    public Long createReport(Long potholeId, Long adminId) {
-        // 포트홀 조회
+    public Long createReport(Long potholeId) {
         Pothole pothole = potholeRepository.findById(potholeId)
                 .orElseThrow(() -> new IllegalArgumentException("포트홀을 찾을 수 없습니다."));
 
-        // 이미 신고된 건인지 확인
+        // 중복 신고 방지
         if (reportRepository.findByPotholeId(potholeId).isPresent()) {
-            throw new IllegalStateException("이미 신고 접수된 건입니다.");
+            return null; // 이미 신고된 건이면 패스 (또는 예외 처리)
         }
 
-        // 관리자 조회
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
-
-        // 리포트 생성
+        // 관리자 없이 리포트 생성
         Report report = Report.builder()
                 .pothole(pothole)
-                .admin(admin)
+                .admin(null) // 아직 담당자 없음
                 .build();
+
         reportRepository.save(report);
 
-        // 포트홀 상태 변경 (탐지 -> 신고)
+        // 포트홀 상태 변경 (DETECTED -> REPORTED)
         pothole.changeStatus(PotholeStatus.REPORTED);
 
         return report.getId();
@@ -61,11 +54,19 @@ public class ReportService {
     /**
      * 보수 완료 처리 기능
      * @param reportId 처리할 신고 내역 ID
+     * @param adminId 처리한 관리자 ID
      * @throws IllegalArgumentException 신고 내역을 찾을 수 없을 경우
+     * @throws IllegalArgumentException 관리자를 찾을 수 없는 경우
      */
-    public void completeReport(Long reportId) {
+    public void completeReport(Long reportId, Long adminId) {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다."));
+
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
+
+        // 처리한 관리자 정보 업데이트
+        report.assignAdmin(admin);
 
         // 신고 상태 변경
         report.complete();
@@ -93,6 +94,28 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<ReportResponseDto> getAllReports() {
         return reportRepository.findAll().stream()
+                .map(ReportResponseDto::from)
+                .toList();
+    }
+
+    /**
+     * 특정 관리자의 처리 내역 조회
+     * @param adminId 조회할 관리자 ID
+     */
+    @Transactional(readOnly = true)
+    public List<ReportResponseDto> getReportsByAdmin(Long adminId) {
+        return reportRepository.findByAdminId(adminId).stream()
+                .map(ReportResponseDto::from)
+                .toList();
+    }
+
+    /**
+     * 운전자 본인의 신고 내역 조회 (내가 발견한 것들)
+     * @param userId 조회할 운전자 ID
+     */
+    @Transactional(readOnly = true)
+    public List<ReportResponseDto> getReportsByUser(Long userId) {
+        return reportRepository.findByPothole_DriveSession_User_Id(userId).stream()
                 .map(ReportResponseDto::from)
                 .toList();
     }
