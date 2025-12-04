@@ -1,6 +1,6 @@
 package com.potping.domain.report.entity;
 
-import com.potping.domain.pothole.entity.Pothole;
+import com.potping.domain.session.entity.DriveSession;
 import com.potping.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -31,16 +31,16 @@ public class Report {
     private LocalDateTime completedAt; // 보수 완료 시각
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pothole_id", nullable = false)
-    private Pothole pothole; // 어떤 포트홀에 대한 신고인가
+    @JoinColumn(name = "session_id", nullable = false, unique = true)
+    private DriveSession driveSession;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = true)
     private User admin; // 처리한 관리자
 
     @Builder
-    public Report(Pothole pothole, User admin) {
-        this.pothole = pothole;
+    public Report(DriveSession driveSession, User admin) {
+        this.driveSession = driveSession;
         this.admin = admin;
         this.processStatus = ReportProcessStatus.SUBMITTED;
     }
