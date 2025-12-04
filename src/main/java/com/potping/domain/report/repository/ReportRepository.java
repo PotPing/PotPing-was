@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
-    // 특정 포트홀에 대한 신고 내역이 있는지 조회 (중복 신고 방지용)
-    Optional<Report> findByPotholeId(Long potholeId);
+    // 세션 ID로 신고 내역 찾기 (중복 신고 방지)
+    Optional<Report> findByDriveSessionId(Long sessionId);
 
     // 특정 관리자가 처리한 신고 내역 조회
     List<Report> findByAdminId(Long adminId);
 
-    // "내 주행 세션에서 발생한 신고 내역" 조회
-    List<Report> findByPothole_DriveSession_User_Id(Long userId);
+    // 운전자별 신고 내역 조회 (세션의 운전자로 찾기)
+    List<Report> findByDriveSession_User_Id(Long userId);
 }
