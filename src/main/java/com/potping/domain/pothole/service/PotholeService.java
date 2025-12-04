@@ -7,7 +7,6 @@ import com.potping.domain.pothole.dto.response.PotholeResponseDto;
 import com.potping.domain.pothole.entity.Pothole;
 import com.potping.domain.pothole.entity.PotholeSeverity;
 import com.potping.domain.pothole.repository.PotholeRepository;
-import com.potping.domain.report.service.ReportService;
 import com.potping.domain.session.entity.DriveSession;
 import com.potping.domain.session.repository.DriveSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ public class PotholeService {
     private final PotholeRepository potholeRepository;
     private final DriveSessionRepository driveSessionRepository;
     private final DetectionLogRepository detectionLogRepository;
-    private final ReportService reportService;
 
     /**
      * 포트홀 탐지 정보 처리 및 자동 신고 처리(YOLO 연동)
@@ -54,8 +52,6 @@ public class PotholeService {
                     .build();
 
             potholeRepository.save(pothole);
-
-            reportService.createReport(pothole.getId());
         }
 
         // 3. 로그 저장 (기존 동일)

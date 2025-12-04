@@ -21,6 +21,7 @@ public class ReportController {
     private final ReportService reportService;
 
     @Operation(summary = "보수 완료 처리", description = "공사가 완료된 건을 처리 완료 상태로 변경합니다.")
+    @PostMapping
     public ResponseEntity<String> completeReport(
             @PathVariable Long reportId,
             @SessionAttribute(name = "LOGIN_USER", required = false) User admin) {
