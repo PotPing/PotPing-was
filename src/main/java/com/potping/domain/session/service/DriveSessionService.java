@@ -2,6 +2,7 @@ package com.potping.domain.session.service;
 
 import com.potping.domain.region.entity.Region;
 import com.potping.domain.region.repository.RegionRepository;
+import com.potping.domain.report.service.ReportService;
 import com.potping.domain.session.dto.request.SessionRequestDto;
 import com.potping.domain.session.entity.DriveSession;
 import com.potping.domain.session.repository.DriveSessionRepository;
@@ -17,6 +18,7 @@ public class DriveSessionService {
     private final DriveSessionRepository driveSessionRepository;
     private final UserRepository userRepository;
     private final RegionRepository regionRepository;
+    private final ReportService reportService;
 
     /**
      * 주행 세션 시작
@@ -47,6 +49,9 @@ public class DriveSessionService {
         DriveSession session = driveSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
 
-        session.endSession(); // 종료 시간 기록
+        session.endSession(); // 시간 기록
+
+        // 주행 종료 시 해당 세션에 대한 신고 자동 생성
+        reportService.createReportForSession(sessionId);
     }
 }
