@@ -10,8 +10,8 @@ public record ReportResponseDto(
         @Schema(description = "신고 ID", example = "1")
         Long reportId,
 
-        @Schema(description = "관련 포트홀 ID", example = "55")
-        Long potholeId,
+        @Schema(description = "관련 주행 ID", example = "55")
+        Long sessionId,
 
         @Schema(description = "발견 지역명", example = "경상북도 경산시")
         String regionName,
@@ -34,8 +34,8 @@ public record ReportResponseDto(
     public static ReportResponseDto from(Report report, Long totalPotholes) {
         return new ReportResponseDto(
                 report.getId(),
-                report.getPothole().getId(),
-                report.getPothole().getDriveSession().getRegion().getName(),
+                report.getDriveSession().getId(),
+                report.getDriveSession().getRegion().getName(),
                 totalPotholes,
                 report.getAdmin().getUsername(),
                 report.getProcessStatus(),
