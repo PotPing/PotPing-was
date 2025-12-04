@@ -6,6 +6,8 @@ import com.potping.domain.pothole.repository.PotholeRepository;
 import com.potping.domain.report.dto.response.ReportResponseDto;
 import com.potping.domain.report.entity.Report;
 import com.potping.domain.report.repository.ReportRepository;
+import com.potping.domain.session.entity.DriveSession;
+import com.potping.domain.session.repository.DriveSessionRepository;
 import com.potping.domain.user.entity.User;
 import com.potping.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,32 +23,38 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final PotholeRepository potholeRepository;
+    private final DriveSessionRepository driveSessionRepository;
     private final UserRepository userRepository;
 
     /**
      * 자동 신고 접수 기능 (시스템에 의해 호출)
-     * @param potholeId 신고 대상 포트홀 ID
+     * @param sessionId 신고 대상 포트홀 ID
      * @return 생성된 신고 내역의 ID (PK)
      */
-    public Long createReport(Long potholeId) {
-        Pothole pothole = potholeRepository.findById(potholeId)
-                .orElseThrow(() -> new IllegalArgumentException("포트홀을 찾을 수 없습니다."));
+    public Long createReportForSession(Long sessionId) {
+        DriveSession session = driveSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
 
-        // 중복 신고 방지
-        if (reportRepository.findByPotholeId(potholeId).isPresent()) {
-            return null; // 이미 신고된 건이면 패스 (또는 예외 처리)
+        // 이미 신고된 세션인지 확인
+        if (reportRepository.findByDriveSessionId(sessionId).isPresent()) {
+            return null;
         }
 
-        // 관리자 없이 리포트 생성
+        // 1. 리포트 생성
         Report report = Report.builder()
-                .pothole(pothole)
-                .admin(null) // 아직 담당자 없음
+                .driveSession(session)
+                .admin(null)
                 .build();
-
         reportRepository.save(report);
 
-        // 포트홀 상태 변경 (DETECTED -> REPORTED)
-        pothole.changeStatus(PotholeStatus.REPORTED);
+        // 2. 해당 세션의 모든 포트홀 상태: DETECTED -> REPORTED
+        List<Pothole> potholes = potholeRepository.findAll().stream()
+                .filter(p -> p.getDriveSession().getId().equals(sessionId))
+                .toList();
+
+        for (Pothole p : potholes) {
+            p.changeStatus(PotholeStatus.REPORTED);
+        }
 
         return report.getId();
     }
@@ -63,16 +71,20 @@ public class ReportService {
                 .orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다."));
 
         User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("관리자를 찾을 수 없습니다."));
 
-        // 처리한 관리자 정보 업데이트
+        // 1. 리포트 완료 처리 (담당자 기록)
         report.assignAdmin(admin);
-
-        // 신고 상태 변경
         report.complete();
 
-        // 포트홀 상태 변경 (신고 -> 보수 완료)
-        report.getPothole().changeStatus(PotholeStatus.FIXED);
+        // 2. 해당 세션의 모든 포트홀 상태: REPORTED -> FIXED
+        List<Pothole> potholes = potholeRepository.findAll().stream()
+                .filter(p -> p.getDriveSession().getId().equals(report.getDriveSession().getId()))
+                .toList();
+
+        for (Pothole p : potholes) {
+            p.changeStatus(PotholeStatus.FIXED);
+        }
     }
 
     /**
@@ -86,7 +98,7 @@ public class ReportService {
                 .orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다."));
 
         // 해당 포트홀이 속한 세션의 전체 포트홀 개수 조회
-        Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+        Long count = potholeRepository.countByDriveSessionId(report.getDriveSession().getId());
 
         return ReportResponseDto.from(report, count);
     }
@@ -99,7 +111,7 @@ public class ReportService {
     public List<ReportResponseDto> getAllReports() {
         return reportRepository.findAll().stream()
                 .map(report -> {
-                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    Long count = potholeRepository.countByDriveSessionId(report.getDriveSession().getId());
                     return ReportResponseDto.from(report, count);
                 })
                 .toList();
@@ -113,7 +125,7 @@ public class ReportService {
     public List<ReportResponseDto> getReportsByAdmin(Long adminId) {
         return reportRepository.findByAdminId(adminId).stream()
                 .map(report -> {
-                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    Long count = potholeRepository.countByDriveSessionId(report.getDriveSession().getId());
                     return ReportResponseDto.from(report, count);
                 })
                 .toList();
@@ -125,9 +137,10 @@ public class ReportService {
      */
     @Transactional(readOnly = true)
     public List<ReportResponseDto> getReportsByUser(Long userId) {
-        return reportRepository.findByPothole_DriveSession_User_Id(userId).stream()
+        return reportRepository.findByDriveSession_User_Id(userId).stream()
                 .map(report -> {
-                    Long count = potholeRepository.countByDriveSessionId(report.getPothole().getDriveSession().getId());
+                    // 해당 포트홀이 속한 세션의 총 포트홀 개수 조회
+                    Long count = potholeRepository.countByDriveSessionId(report.getDriveSession().getId());
                     return ReportResponseDto.from(report, count);
                 })
                 .toList();
