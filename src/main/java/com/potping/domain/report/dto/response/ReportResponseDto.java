@@ -31,13 +31,39 @@ public record ReportResponseDto(
         @Schema(description = "보수 완료 시각 (완료 전엔 null)")
         LocalDateTime completedAt
 ) {
+
     public static ReportResponseDto from(Report report, Long totalPotholes) {
+
+        // 세션 / 지역 정보 안전하게 추출
+        Long sessionId = null;
+        String regionName = null;
+
+        if (report.getDriveSession() != null) {
+            sessionId = report.getDriveSession().getId();
+
+            var region = report.getDriveSession().getRegion();
+            if (region != null) {
+                if (region.getParent() != null) {
+                    // 상위 지역 + 하위 지역 (예: 경상북도 경산시)
+                    regionName = region.getParent().getName() + " " + region.getName();
+                } else {
+                    regionName = region.getName();
+                }
+            }
+        }
+
+        // 관리자 이름 (담당자 미지정일 수 있음)
+        String adminName = null;
+        if (report.getAdmin() != null) {
+            adminName = report.getAdmin().getUsername();
+        }
+
         return new ReportResponseDto(
                 report.getId(),
-                report.getDriveSession().getId(),
-                report.getDriveSession().getRegion().getName(),
+                sessionId,
+                regionName,
                 totalPotholes,
-                report.getAdmin().getUsername(),
+                adminName,
                 report.getProcessStatus(),
                 report.getReportedAt(),
                 report.getCompletedAt()
