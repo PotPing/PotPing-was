@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DetectionRequestDto(
+        @Schema(description = "주행 세션 ID", example = "55")
+        @JsonProperty("session_id")
+        Long sessionId,
 
         @Schema(description = "영상 타임스탬프", example = "12.5")
         @JsonProperty("video_timestamp")
@@ -27,6 +30,9 @@ public record DetectionRequestDto(
         @JsonProperty("average_confidence")
         Double averageConfidence,
 
+        @JsonProperty("detection_center")
+        CenterCoordinate center,
+
         @Schema(description = "이미지 파일 이름들")
         @JsonProperty("images")
         ImageNames images
@@ -36,5 +42,11 @@ public record DetectionRequestDto(
             String original,
             String processed,
             String detected
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record CenterCoordinate(
+            Double x,
+            Double y
     ) {}
 }

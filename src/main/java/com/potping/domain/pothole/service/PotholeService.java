@@ -30,18 +30,16 @@ public class PotholeService {
      * @throws IllegalArgumentException 유효하지 않은 세션 ID일 경우 예외 발생
      */
     public void processDetection(DetectionRequestDto dto) {
-        // TODO: 지금은 테스트용으로 "임시 세션 ID"를 사용.
-        //       실제로는 프론트에서 주행 시작 시 받은 sessionId를
-        //       쿼리파라미터 / 헤더 / 별도 매핑 테이블 등을 통해 넘겨주는 구조로 개선해야 함.
-        Long sessionId = 1L;   // 🔴 임시 하드코딩 (테스트용)
+        Long sessionId = dto.sessionId();
 
         DriveSession session = driveSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. sessionId=" + sessionId));
 
-        // 타임스탬프 (초 단위, 정수로 변환)
-        int timestamp = dto.videoTimestamp() != null
-                ? dto.videoTimestamp().intValue()
-                : 0;
+        // 타임스탬프 처리
+        int timestamp = dto.videoTimestamp() != null ? dto.videoTimestamp().intValue() : 0;;
+
+        Double coorX = (dto.center() != null) ? dto.center().x() : null;
+        Double coorY = (dto.center() != null) ? dto.center().y() : null;
 
         // 중복 포트홀 검사 (같은 세션, ±2초 이내)
         Optional<Pothole> duplicate = potholeRepository.findDuplicate(sessionId, timestamp - 2, timestamp + 2);
@@ -55,8 +53,8 @@ public class PotholeService {
                     .videoTimestamp(timestamp)
                     .severity(PotholeSeverity.valueOf(dto.severity())) // "LOW/MEDIUM/HIGH" 가 enum과 동일하다고 가정
                     .sequenceNumber(dto.totalDetections())            // 이번 세션에서 몇 번째 탐지인지
-                    .coordinateX(null)                                // YOLO에서 center 좌표를 안 보내므로 일단 null
-                    .coordinateY(null)
+                    .coordinateX(coorX)                                // YOLO에서 center 좌표를 안 보내므로 일단 null
+                    .coordinateY(coorY)
                     .build();
 
             potholeRepository.save(pothole);
@@ -67,7 +65,7 @@ public class PotholeService {
                 .pothole(pothole)
                 .originalImgPath(dto.images() != null ? dto.images().original() : null)
                 .processedImgPath(dto.images() != null ? dto.images().processed() : null)
-                .confidenceScore(dto.averageConfidence()) // 평균 신뢰도 사용
+                .confidenceScore(dto.averageConfidence())
                 .build();
 
         detectionLogRepository.save(log);
