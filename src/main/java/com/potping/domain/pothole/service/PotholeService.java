@@ -30,13 +30,21 @@ public class PotholeService {
      * @throws IllegalArgumentException 유효하지 않은 세션 ID일 경우 예외 발생
      */
     public void processDetection(DetectionRequestDto dto) {
-        // 세션 확인
-        DriveSession session = driveSessionRepository.findById(dto.sessionId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다."));
+        // TODO: 지금은 테스트용으로 "임시 세션 ID"를 사용.
+        //       실제로는 프론트에서 주행 시작 시 받은 sessionId를
+        //       쿼리파라미터 / 헤더 / 별도 매핑 테이블 등을 통해 넘겨주는 구조로 개선해야 함.
+        Long sessionId = 1L;   // 🔴 임시 하드코딩 (테스트용)
 
-        // 중복 검사
-        int timestamp = dto.videoTimestamp().intValue();
-        Optional<Pothole> duplicate = potholeRepository.findDuplicate(dto.sessionId(), timestamp - 2, timestamp + 2);
+        DriveSession session = driveSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. sessionId=" + sessionId));
+
+        // 타임스탬프 (초 단위, 정수로 변환)
+        int timestamp = dto.videoTimestamp() != null
+                ? dto.videoTimestamp().intValue()
+                : 0;
+
+        // 중복 포트홀 검사 (같은 세션, ±2초 이내)
+        Optional<Pothole> duplicate = potholeRepository.findDuplicate(sessionId, timestamp - 2, timestamp + 2);
 
         Pothole pothole;
         if (duplicate.isPresent()) {
@@ -45,21 +53,21 @@ public class PotholeService {
             pothole = Pothole.builder()
                     .driveSession(session)
                     .videoTimestamp(timestamp)
-                    .severity(PotholeSeverity.valueOf(dto.severity()))
-                    .sequenceNumber(dto.sequenceNumber())
-                    .coordinateX(dto.center() != null ? dto.center().x() : null)
-                    .coordinateY(dto.center() != null ? dto.center().y() : null)
+                    .severity(PotholeSeverity.valueOf(dto.severity())) // "LOW/MEDIUM/HIGH" 가 enum과 동일하다고 가정
+                    .sequenceNumber(dto.totalDetections())            // 이번 세션에서 몇 번째 탐지인지
+                    .coordinateX(null)                                // YOLO에서 center 좌표를 안 보내므로 일단 null
+                    .coordinateY(null)
                     .build();
 
             potholeRepository.save(pothole);
         }
 
-        // 3. 로그 저장 (기존 동일)
+        // 탐지 로그 저장
         DetectionLog log = DetectionLog.builder()
                 .pothole(pothole)
-                .originalImgPath(dto.images().original())
-                .processedImgPath(dto.images().processed())
-                .confidenceScore(dto.confidence())
+                .originalImgPath(dto.images() != null ? dto.images().original() : null)
+                .processedImgPath(dto.images() != null ? dto.images().processed() : null)
+                .confidenceScore(dto.averageConfidence()) // 평균 신뢰도 사용
                 .build();
 
         detectionLogRepository.save(log);
